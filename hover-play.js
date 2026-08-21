@@ -13,8 +13,7 @@
     iframe.className = 'yt-embed-frame';
     iframe.src = 'https://www.youtube.com/embed/' + id +
       '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=' + id +
-      (origin ? '&origin=' + encodeURIComponent(origin) : '') +
-      '&enablejsapi=1';
+      (origin ? '&origin=' + encodeURIComponent(origin) + '&enablejsapi=1' : '');
     iframe.setAttribute('allow', 'autoplay; encrypted-media');
     iframe.setAttribute('frameborder', '0');
     iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
