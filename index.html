@@ -771,9 +771,32 @@
 
   // ---- Hero video ----
   var v = document.getElementById('hero'), pb = document.getElementById('pause');
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { v.removeAttribute('autoplay'); v.pause(); pb.textContent = 'Play'; }
-  pb.addEventListener('click', function () {
-    if (v.paused) { v.play(); pb.textContent = 'Pause'; } else { v.pause(); pb.textContent = 'Play'; }
+  // Keep the button label in sync with what the video is really doing
+  var userPaused = false;
+  function syncBtn() { pb.textContent = v.paused ? 'Play' : 'Pause'; }
+  v.addEventListener('play', syncBtn); v.addEventListener('pause', syncBtn); v.addEventListener('playing', syncBtn);
+  function tryPlay() {
+    if (userPaused || !v.paused) return;
+    v.muted = true;
+    var p = v.play(); if (p && p.catch) p.catch(function () {});
+  }
+  // Ask to play as soon as the page loads, and again once the video has data
+  tryPlay();
+  v.addEventListener('loadeddata', tryPlay);
+  v.addEventListener('canplay', tryPlay);
+  // If the phone blocked autoplay, start on the visitor's first tap, scroll or key press
+  function onFirstGesture(e) {
+    if (e && e.target && e.target.closest && e.target.closest('#pause')) return; // the button handles itself
+    tryPlay();
+    ['touchstart', 'pointerdown', 'scroll', 'wheel', 'keydown'].forEach(function (ev) { window.removeEventListener(ev, onFirstGesture, true); });
+  }
+  ['touchstart', 'pointerdown', 'scroll', 'wheel', 'keydown'].forEach(function (ev) { window.addEventListener(ev, onFirstGesture, { capture: true, passive: true }); });
+  // Resume when the visitor comes back to the tab
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) tryPlay(); });
+  syncBtn();
+  pb.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (v.paused) { userPaused = false; v.play(); } else { userPaused = true; v.pause(); }
   });
 
   // ---- Portfolio viewer ----
@@ -816,7 +839,7 @@
   document.querySelectorAll('[data-yt], [data-ig]').forEach(function (el) { el.addEventListener('click', function () { openVideo(el); }); });
   document.getElementById('viewer-close').addEventListener('click', closeVideo);
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeVideo(); });
-  dlg.addEventListener('close', function () { frame.innerHTML = ''; if (pb.textContent === 'Pause') v.play(); });
+  dlg.addEventListener('close', function () { frame.innerHTML = ''; if (!userPaused) tryPlay(); });
 
 
 
